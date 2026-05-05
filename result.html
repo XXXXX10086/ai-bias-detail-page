@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI偏见哈哈镜｜个人结果</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="page">
+    <section class="card">
+      <h1>AI偏见哈哈镜｜你的专属结果</h1>
+      <p class="sub">这不是重新判决，这是把系统刚才怎么误会你的过程摊开给你看。</p>
+
+      <div id="loading">正在读取你的结果，请稍等……</div>
+      <div id="error" style="display:none;"></div>
+
+      <div id="result" style="display:none;">
+        <h2 id="labelTitle">标签</h2>
+        <p><strong>标签编号：</strong><span id="labelId"></span></p>
+        <p><strong>命中年龄段：</strong><span id="ageBand"></span></p>
+
+        <h2>这个标签到底在编排你什么</h2>
+        <p id="comment"></p>
+
+        <h2>这套话术从哪儿学来的</h2>
+        <p id="anchor"></p>
+
+        <h2>它是怎么命中你的</h2>
+        <p id="triggerText"></p>
+
+        <h2>专属报告图</h2>
+        <img id="reportImage" alt="你的专属报告图" style="max-width:100%; border:3px solid #111; border-radius:16px; display:none;" />
+
+        <div class="download-box">
+          <a id="downloadBtn" class="download-btn" href="#" download>
+            下载我的专属报告图
+          </a>
+          <p class="download-tip">
+            如果手机没有直接开始下载，请点开图片后长按保存。
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://ssyffwbeauaxtfvcspra.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_z71oFU1KTv6pQ7--5jkJnQ_hi8oKYfr";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function getQueryId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id");
+    }
+
+    async function loadResult() {
+      const loadingEl = document.getElementById("loading");
+      const errorEl = document.getElementById("error");
+      const resultEl = document.getElementById("result");
+
+      const id = getQueryId();
+
+      if (!id) {
+        loadingEl.style.display = "none";
+        errorEl.style.display = "block";
+        errorEl.textContent = "链接里没有结果 id，请重新扫码。";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("reports")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      loadingEl.style.display = "none";
+
+      if (error || !data) {
+        errorEl.style.display = "block";
+        errorEl.textContent = "没有找到这份结果，可能链接过期了，或者这次结果还没成功保存。";
+        console.error(error);
+        return;
+      }
+
+      document.getElementById("labelTitle").textContent = data.label || "未命名标签";
+      document.getElementById("labelId").textContent = data.label_id || "暂无";
+      document.getElementById("ageBand").textContent = data.age_band || "暂无";
+      document.getElementById("comment").textContent = data.comment || "暂无说明";
+      document.getElementById("anchor").textContent = data.anchor || "暂无来源说明";
+      document.getElementById("triggerText").textContent = data.trigger_text || "暂无命中依据";
+
+      if (data.image_url) {
+        const img = document.getElementById("reportImage");
+        const btn = document.getElementById("downloadBtn");
+        img.src = data.image_url;
+        img.style.display = "block";
+        btn.href = data.image_url;
+      }
+
+      resultEl.style.display = "block";
+    }
+
+    loadResult();
+  </script>
+</body>
+</html>
